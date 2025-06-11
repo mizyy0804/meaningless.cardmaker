@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>무의미 명함 연구소</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+  const supabase = supabase.createClient(
+    "https://dleqnfrtnkufmgpgrncb.supabase.co",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // 너의 anon key
+  );
+</script>
+
+
+  <style>
+    @font-face {
+      font-family: 'Ycomputer-Regular';
+      src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_11-01@1.0/Ycomputer-Regular.woff2') format('woff2');
+      font-weight: normal;
+      font-style: normal;
+    }
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(#a0d2ff, #ffffff);
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      text-align: center;
+      margin: 40px 0 20px;
+    }
+    h1 {
+      font-family: 'Ycomputer-Regular';
+      font-size: 48px;
+      color: white;
+      margin: 0;
+    }
+    .main-container {
+      display: flex;
+      flex: 1;
+      padding: 20px;
+    }
+    .left-panel {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .right-panel {
+      width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      padding-left: 20px;
+    }
+    .toolbar, .sticker-panel, .webcam-controls, .buttons-panel {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .toolbar input[type="text"],
+    .toolbar input[type="number"],
+    .toolbar input[type="color"] {
+      margin: 4px 0;
+      width: 100%;
+    }
+    .toolbar button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      background: maroon;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .sticker-panel {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+    .sticker-panel img {
+      width: 50px;
+      height: 50px;
+      cursor: pointer;
+    }
+    .buttons-panel button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .buttons-panel .finish-btn {
+      background: #C8FF00;
+      color: #222;
+    }
+    .buttons-panel .reset-btn {
+      background: #2F2FFF;
+      color: white;
+    }
+    .card-area {
+      width: 600px;
+      height: 350px;
+      perspective: 1200px;
+      background: #eaeaea;
+      border-radius: 20px;
+      position: relative;
+    }
+    #card3d {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 20px;
+      border: 2px solid black;
+      backface-visibility: hidden;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(#000, #000);
+      mask-image: linear-gradient(#000, #000);
+    }
+    .card-front { background: #f5f5f5; }
+    .card-back { background: #e0e0e0; transform: rotateY(180deg); }
+
+    .text-box, .sticker-wrapper {
+      position: absolute;
+      cursor: grab;
+      user-select: none;
+    }
+    .text-box {
+      font-size: 24px;
+      font-weight: bold;
+      resize: both;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .sticker-img {
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .resize-handle {
+      width: 12px;
+      height: 12px;
+      background: hotpink;
+      position: absolute;
+      right: -6px;
+      bottom: -6px;
+      cursor: se-resize;
+      border-radius: 50%;
+      border: 2px solid white;
+    }
+    .delete-btn {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: red;
+      color: white;
+      font-size: 12px;
+      width: 20px;
+      height: 20px;
+      text-align: center;
+      line-height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 10;
+    }
+    .selected {
+      outline: 2px dashed red;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+@font-face {
+    font-family: 'Ycomputer-Regular';
+    src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_11-01@1.0/Ycomputer-Regular.woff2') format('woff2');
+  }
+
+  .side-nav {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-family: 'Ycomputer-Regular';
+    z-index: 1000;
+  }
+
+  .side-nav a {
+    color: #1e3c2f;
+    font-size: 18px;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .side-nav a:hover {
+    color: #4caf50;
+  }
+
+  .marquee-container {
+    overflow: hidden;
+    width: 100%;
+    margin: 40px 0;
+  }
+
+  .marquee-row {
+    display: flex;
+    animation: marquee 20s linear infinite;
+  }
+
+  .marquee-row.reverse {
+    animation-direction: reverse;
+  }
+
+  .marquee-image {
+    height: 150px;
+    margin: 0 10px;
+  }
+
+  @keyframes marquee {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+  }
+
+  footer ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  footer h4 {
+    margin-bottom: 8px;
+  }
+
+  </style>
+
+</head>
+
+<body>
+  <nav class="side-nav">
+  <a href="#about">프로젝트에 관해</a>
+  <a href="gallery.html" target="_blank">명함 둘러보기</a>
+  <a href="#generate">명함 만들기</a>
+</nav>
+
+<section id="generate">
+
+  <div id="cameraModal" class="modal hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 999;">
+    <div style="background: white; padding: 20px; border-radius: 12px; text-align: center;">
+      <video id="modalVideo" autoplay playsinline style="width: 320px; height: 240px; border-radius: 8px; margin-bottom: 10px;"></video><br>
+      <button id="captureModalBtn">📸 캡처</button>
+      <button id="closeModalBtn">닫기</button>
+    </div>
+  </div>
+
+  <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
+
+  <header>
+    <p class="subtitle">쓸데없지만 갖고 싶은, 당신만의 명함</p>
+    <h1>무의미 명함연구소</h1>
+  </header>
+
+  <div class="main-container">
+    <div class="left-panel">
+      <div class="card-area">
+        <div id="card3d">
+          <div id="cardFront" class="card-face card-front"></div>
+          <div id="cardBack" class="card-face card-back"></div>
+        </div>
+      </div>
+    </div>
+    <div class="right-panel">
+      <div class="toolbar">
+        <input type="color" id="bgColorPicker" value="#f5f5f5">
+        <input type="number" id="fontSizeInput" value="24" min="10" max="72" step="2">
+        <input type="text" id="textInput" placeholder="텍스트 입력">
+        <button onclick="addText()">텍스트 추가</button>
+        <input type="file" id="imageUpload" accept="image/*">
+        <button id="openCameraBtn">📸 웹캠 열기</button>
+      </div>
+      <div class="sticker-panel" id="stickerPanel">
+        <img src="stickers/sticker-01.webp" onclick="addSticker(this.src)">
+        <img src="stickers/sticker-02.webp" onclick="addSticker(this.src)">
+        <img src="stickers/sticker-03.webp" onclick="addSticker(this.src)">
+        <img src="stickers/sticker-04.webp" onclick="addSticker(this.src)">
+        <img src="stickers/sticker-05.webp" onclick="addSticker(this.src)">
+        <img src="stickers/sticker-06.webp" onclick="addSticker(this.src)">
+      </div>
+      <div class="buttons-panel">
+        <button class="finish-btn">finish!</button>
+        <button class="reset-btn">reset?</button>
+        <button id="uploadToSupabaseBtn">명함 공유하기</button>
+  </div>
+   </div>
+    </div>     
+</section>
+<!-- 설명 영역 -->
+<section id="about">
+<div class="intro-text" style="margin: 80px auto; text-align: center; font-family: 'Ycomputer-Regular';">
+  <h3>개성이 중요한 시대.</h3>
+  <p>당신을 기억하게 만드는 건, 첫인상의 디테일입니다.<br>
+    우리가 만든 건 단순한 명함이 아니에요.<br>
+    당신의 정체성, 취향, 무드를 감각적으로 담아낸 작은 브랜드 한 조각이죠.<br>
+    몇 번의 클릭으로, ‘나’를 담은 명함을 직접 만들어보세요.<br>
+    쉽고 빠르게, 하지만 누구보다 특별하게.</p>
+</div>
+
+<!-- 갤러리 가로줄 (마퀴 느낌) -->
+<div class="marquee-container">
+  <div class="marquee-row">
+    <img src="cards/card1.webp" class="marquee-image">
+    <img src="cards/card2.webp" class="marquee-image">
+    <img src="cards/card3.webp" class="marquee-image">
+    <img src="cards/card4.webp" class="marquee-image">
+    <img src="cards/card1.webp" class="marquee-image">
+    <img src="cards/card2.webp" class="marquee-image">
+    <img src="cards/card3.webp" class="marquee-image">
+    <img src="cards/card4.webp" class="marquee-image">
+  </div>
+</div>
+
+<div class="marquee-container">
+  <div class="marquee-row reverse">
+    <img src="cards/card4.webp" class="marquee-image">
+    <img src="cards/card3.webp" class="marquee-image">
+    <img src="cards/card2.webp" class="marquee-image">
+    <img src="cards/card1.webp" class="marquee-image">
+    <img src="cards/card4.webp" class="marquee-image">
+    <img src="cards/card3.webp" class="marquee-image">
+    <img src="cards/card2.webp" class="marquee-image">
+    <img src="cards/card1.webp" class="marquee-image">
+  </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer style="margin-top: 80px; background: #f4f4f4; padding: 40px; display: flex; justify-content: space-around; font-family: 'Ycomputer-Regular';">
+  <div class="footer-section">
+    <h4>무의미 명함 연구소</h4>
+    <ul>
+      <li>당신만의 무드를 담은 DIY 명함</li>
+      <li>상상을 현실로 만드는 크리에이티브 공간</li>
+      <li>&copy; 2025 무의미 연구소</li>
+    </ul>
+  </div>
+  <div class="footer-section">
+    <h4>도움말</h4>
+    <ul>
+      <li>자주 묻는 질문</li>
+      <li>고객센터: help@mooui.me</li>
+      <li>이용 약관 | 개인정보 보호</li>
+    </ul>
+  </div>
+  <div class="footer-section">
+    <h4>뉴스레터 구독</h4>
+    <p>희귀하고 쓸데없는 디자인 뉴스 받아보기</p>
+    <input type="email" placeholder="your@email.com">
+  </div>
+</footer>
+
+</body>
+
+<script>
+    const card3d = document.getElementById("card3d");
+    const cardFront = document.getElementById("cardFront");
+    const cardBack = document.getElementById("cardBack");
+    const bgColorPicker = document.getElementById("bgColorPicker");
+    const fontSizeInput = document.getElementById("fontSizeInput");
+    const textInput = document.getElementById("textInput");
+    const imageUpload = document.getElementById("imageUpload");
+    const SUPABASE_URL = "https://dleqnfrtnkufmgpgrncb.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRsZXFuZnJ0bmt1Zm1ncGdybmNiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk2MTI0NjUsImV4cCI6MjA2NTE4ODQ2NX0.zbZNt_EjiyK7S0lKweqQ8ZBAbJc3hSgzT7pSCoat_gM";
+
+    let selectedEl = null;
+
+    function getCurrentSide() {
+      return card3d.classList.contains("flipped") ? cardBack : cardFront;
+    }
+
+    bgColorPicker.addEventListener("input", (e) => {
+      getCurrentSide().style.backgroundColor = e.target.value;
+    });
+
+    function addDeleteButton(parent) {
+      const del = document.createElement("div");
+      del.className = "delete-btn";
+      del.textContent = "✖";
+      del.onclick = () => parent.remove();
+      parent.appendChild(del);
+    }
+
+    function makeSelectable(el) {
+      el.addEventListener("click", (e) => {
+        if (e.target.classList.contains("delete-btn")) return;
+        e.stopPropagation();
+        if (selectedEl) selectedEl.classList.remove("selected");
+        selectedEl = el;
+        selectedEl.classList.add("selected");
+      });
+    }
+
+    function makeDraggableAndResizable(el, handle = null, container = null) {
+      let isDragging = false, isResizing = false;
+      let offsetX, offsetY, startX, startY, startWidth, startHeight;
+      const parent = container || el.parentNode;
+
+      el.addEventListener("mousedown", (e) => {
+        if (e.target === handle || e.target.classList.contains("delete-btn")) return;
+        isDragging = true;
+        offsetX = e.offsetX;
+        offsetY = e.offsetY;
+      });
+
+      if (handle) {
+        handle.addEventListener("mousedown", (e) => {
+          e.stopPropagation();
+          isResizing = true;
+          startX = e.clientX;
+          startY = e.clientY;
+          startWidth = el.offsetWidth;
+          startHeight = el.offsetHeight;
+        });
+      }
+
+      document.addEventListener("mousemove", (e) => {
+        const rect = parent.getBoundingClientRect();
+        if (isDragging) {
+          let x = e.clientX - rect.left - offsetX;
+          let y = e.clientY - rect.top - offsetY;
+          x = Math.max(0, Math.min(rect.width - el.offsetWidth, x));
+          y = Math.max(0, Math.min(rect.height - el.offsetHeight, y));
+          el.style.left = `${x}px`;
+          el.style.top = `${y}px`;
+        }
+        if (isResizing) {
+          const dx = e.clientX - startX;
+          const dy = e.clientY - startY;
+          const size = Math.max(30, startWidth + dx, startHeight + dy);
+          el.style.width = `${size}px`;
+          el.style.height = `${size}px`;
+        }
+      });
+
+      document.addEventListener("mouseup", () => {
+        isDragging = false;
+        isResizing = false;
+      });
+    }
+
+    function addSticker(src, side) {
+      const target = side || getCurrentSide();
+      const wrapper = document.createElement("div");
+      wrapper.className = "sticker-wrapper";
+      wrapper.style.left = "200px";
+      wrapper.style.top = "100px";
+
+      const img = document.createElement("img");
+      img.src = src;
+      img.className = "sticker-img";
+
+      const handle = document.createElement("div");
+      handle.className = "resize-handle";
+
+      wrapper.appendChild(img);
+      wrapper.appendChild(handle);
+      target.appendChild(wrapper);
+      makeDraggableAndResizable(wrapper, handle, target);
+      makeSelectable(wrapper);
+      addDeleteButton(wrapper);
+    }
+
+    function addText() {
+      const text = textInput.value.trim();
+      const fontSize = fontSizeInput.value;
+      if (!text) return;
+      const box = document.createElement("div");
+      box.className = "text-box";
+      box.textContent = text;
+      box.style.left = "100px";
+      box.style.top = "100px";
+      box.style.fontSize = fontSize + "px";
+      getCurrentSide().appendChild(box);
+      makeDraggableAndResizable(box, null, getCurrentSide());
+      makeSelectable(box);
+      addDeleteButton(box);
+    }
+
+    imageUpload.addEventListener("change", function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => addSticker(event.target.result);
+      reader.readAsDataURL(file);
+    });
+
+
+
+
+    document.querySelector(".finish-btn").addEventListener("click", () => {
+      const clone = card3d.cloneNode(true);
+      clone.style.maskImage = "none";
+      clone.style.webkitMaskImage = "none";
+      clone.style.overflow = "visible";
+
+      const tempWrapper = document.createElement("div");
+      tempWrapper.style.position = "fixed";
+      tempWrapper.style.top = "-10000px";
+      tempWrapper.appendChild(clone);
+      document.body.appendChild(tempWrapper);
+
+      html2canvas(clone, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        scale: 2
+      }).then(canvas => {
+        const link = document.createElement("a");
+        link.download = "my_card.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+
+        const flipContainer = document.querySelector(".flip-container");
+        flipContainer?.classList.add("animate-spin");
+
+        document.body.removeChild(tempWrapper);
+      });
+    });
+
+    document.querySelector(".reset-btn").addEventListener("click", () => {
+      cardFront.innerHTML = "";
+      cardBack.innerHTML = "";
+      document.querySelector(".flip-container").classList.remove("animate-spin");
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Delete" && selectedEl?.parentNode) {
+        selectedEl.remove();
+        selectedEl = null;
+      }
+    });
+    document.addEventListener("click", () => {
+      if (selectedEl) selectedEl.classList.remove("selected");
+      selectedEl = null;
+    });
+
+    // 📸 웹캠 관련
+    const openBtn = document.getElementById("openCameraBtn");
+    const modal = document.getElementById("cameraModal");
+    const closeBtn = document.getElementById("closeModalBtn");
+    const modalVideo = document.getElementById("modalVideo");
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+
+    // 웹캠 열기
+    openBtn.addEventListener("click", () => {
+      modal.classList.remove("hidden");
+
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          modalVideo.srcObject = stream;
+        })
+        .catch(err => {
+          console.error("웹캠 접근 실패:", err);
+          alert("웹캠을 사용할 수 없습니다.");
+        });
+    });
+
+    // 닫기
+    closeBtn.addEventListener("click", () => {
+      modal.classList.add("hidden");
+      if (modalVideo.srcObject) {
+        modalVideo.srcObject.getTracks().forEach(track => track.stop());
+        modalVideo.srcObject = null;
+      }
+    });
+
+    // 캡처
+    document.getElementById("captureModalBtn").addEventListener("click", () => {
+      const videoWidth = modalVideo.videoWidth;
+      const videoHeight = modalVideo.videoHeight;
+      const size = Math.min(videoWidth, videoHeight);
+      const sx = (videoWidth - size) / 2;
+      const sy = (videoHeight - size) / 2;
+
+      context.drawImage(modalVideo, sx, sy, size, size, 0, 0, canvas.width, canvas.height);
+      const imageDataUrl = canvas.toDataURL("image/png");
+      addSticker(imageDataUrl);
+      closeBtn.click();
+    });
+
+    document.getElementById("uploadToSupabaseBtn").addEventListener("click", async () => {
+      const clone = card3d.cloneNode(true);
+      clone.style.maskImage = "none";
+      clone.style.webkitMaskImage = "none";
+      clone.style.overflow = "visible";
+
+      const tempWrapper = document.createElement("div");
+      tempWrapper.style.position = "fixed";
+      tempWrapper.style.top = "-10000px";
+      tempWrapper.appendChild(clone);
+      document.body.appendChild(tempWrapper);
+
+      const canvas = await html2canvas(clone, {
+        useCORS: true,
+        backgroundColor: null,
+        scale: 2
+      });
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+      document.body.removeChild(tempWrapper);
+
+      const filename = `card-${Date.now()}.png`;
+
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const { data, error } = await supabase.storage.from(BUCKET).upload(filename, blob, {
+        contentType: 'image/png',
+        upsert: false
+      });
+
+      if (error) {
+        alert("업로드 실패: " + error.message);
+      } else {
+        alert("성공적으로 업로드됨!");
+      }
+    });
+
+    async function captureCardAsBlob() {
+      const card = document.getElementById("card3d");
+      const clone = card.cloneNode(true);
+      clone.style.overflow = "visible";
+      clone.style.maskImage = "none";
+      clone.style.webkitMaskImage = "none";
+      clone.style.backgroundColor = "#ffffff"; // 배경 보장
+
+      const wrapper = document.createElement("div");
+      wrapper.style.position = "fixed";
+      wrapper.style.top = "-9999px";
+      wrapper.style.left = "-9999px";
+      wrapper.style.width = "600px";
+      wrapper.style.height = "350px";
+      wrapper.appendChild(clone);
+      document.body.appendChild(wrapper);
+
+      const canvas = await html2canvas(clone, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        scale: 2,
+        logging: true,
+      });
+
+      document.body.removeChild(wrapper);
+
+      return new Promise((resolve) => {
+        canvas.toBlob((blob) => {
+          if (!blob || blob.size === 0) {
+            console.error("⚠️ 캡처된 블롭이 비어 있습니다.");
+          }
+          resolve(blob);
+        }, "image/png");
+      });
+    }
+
+
+
+</script>
+</html>
